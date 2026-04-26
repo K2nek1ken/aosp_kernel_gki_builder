@@ -23,8 +23,10 @@ jobs:
         run: |
           mkdir -p $GITHUB_WORKSPACE/kernel_workspace/clang
           cd $GITHUB_WORKSPACE/kernel_workspace
-          curl -LO https://githubusercontent.com
-          tar -C clang/ -zxvf clang-r522817.tar.gz
+          # Качаем напрямую с серверов Google через wget с правильным форматом
+          wget -O clang.tar.gz https://googlesource.com
+          tar -C clang/ -zxvf clang.tar.gz
+          rm clang.tar.gz
 
       - name: Download Kernel Source
         run: |
