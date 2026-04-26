@@ -23,8 +23,8 @@ jobs:
         run: |
           mkdir -p $GITHUB_WORKSPACE/kernel_workspace/clang
           cd $GITHUB_WORKSPACE/kernel_workspace
-          # Качаем напрямую с серверов Google через wget с правильным форматом
-          wget -O clang.tar.gz https://googlesource.com
+          # Используем стабильное зеркало на GitHub
+          curl -Lo clang.tar.gz https://github.com
           tar -C clang/ -zxvf clang.tar.gz
           rm clang.tar.gz
 
