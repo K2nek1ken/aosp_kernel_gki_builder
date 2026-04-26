@@ -2,11 +2,30 @@ name: 🏗️ BUILD ANDROID15-6.1
 on:
   workflow_dispatch:
     inputs:
+      KERNEL_SOURCE:
+        description: "Kernel Source URL"
+        required: true
+        default: "https://github.com"
+      KERNEL_SOURCE_BRANCH:
+        description: "Kernel Branch"
+        required: true
+        default: "mt6878/Galaga/v"
+      KERNEL_CONFIG:
+        description: "Kernel Config"
+        required: true
+        default: "galaga_defconfig"
       release:
         description: "Release"
         required: true
         default: false
         type: boolean
+
+env:
+  KERNEL_SOURCE: ${{ github.event.inputs.KERNEL_SOURCE }}
+  KERNEL_SOURCE_BRANCH: ${{ github.event.inputs.KERNEL_SOURCE_BRANCH }}
+  KERNEL_CONFIG: ${{ github.event.inputs.KERNEL_CONFIG }}
+  ENABLE_KSU: true
+  ENABLE_SUSFS: true
 
 jobs:
   build:
