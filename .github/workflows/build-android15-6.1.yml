@@ -1,26 +1,14 @@
 name: 🏗️ BUILD ANDROID15-6.1
 on:
   workflow_dispatch:
-    inputs:
-      release:
-        description: "Release"
-        required: true
-        default: false
-        type: boolean
 
 jobs:
   build:
-    permissions:
-      contents: write
-    name: BUILD ANDROID15-6.1
     runs-on: ubuntu-latest
-    if: github.event.repository.owner.id == github.event.sender.id
     env:
       KERNEL_SOURCE: "https://github.com"
       KERNEL_SOURCE_BRANCH: "mt6878/Galaga/v"
       KERNEL_CONFIG: "galaga_defconfig"
-      ARCH: "arm64"
-      ENABLE_KERNELSU: "true"
 
     steps:
       - name: Check out
@@ -30,13 +18,12 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler rename libelf-dev dwarves
-          mkdir -p $GITHUB_WORKSPACE/kernel_workspace
 
-      - name: Download Clang (Manual Link)
+      - name: Download Clang
         run: |
+          mkdir -p $GITHUB_WORKSPACE/kernel_workspace/clang
           cd $GITHUB_WORKSPACE/kernel_workspace
-          mkdir clang
-          wget https://googlesource.com
+          curl -LO https://githubusercontent.com
           tar -C clang/ -zxvf clang-r522817.tar.gz
 
       - name: Download Kernel Source
@@ -54,7 +41,7 @@ jobs:
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang/bin:$PATH
           make -j$(nproc --all) O=out ARCH=arm64 ${{ env.KERNEL_CONFIG }}
-          make -j$(nproc --all) CC=clang O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1
+          make -j$(nproc --all) CC=clang O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
