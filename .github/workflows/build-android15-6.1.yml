@@ -16,67 +16,48 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.repository.owner.id == github.event.sender.id
     env:
-      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      CCACHE_NOHASHDIR: "true"
-      CCACHE_HARDLINK: "true"
-      # ТВОИ НАСТРОЙКИ ЯДРА ЗДЕСЬ
       KERNEL_SOURCE: "https://github.com"
       KERNEL_SOURCE_BRANCH: "mt6878/Galaga/v"
       KERNEL_CONFIG: "galaga_defconfig"
-      KERNEL_IMAGE_NAME: "Image"
       ARCH: "arm64"
-      ENABLE_CLANG: "true"
-      USE_AOSP_CLANG: "true"
-      AOSP_CLANG_SYSTEM: "linux-x86"
-      AOSP_CLANG_BRANCH: "master"
-      AOSP_CLANG_VERSION: "r522817"
       ENABLE_KERNELSU: "true"
-      KERNELSU_INSTALLER: "https://githubusercontent.com"
-      KERNELSU_TAG: "main"
 
     steps:
       - name: Check out
         uses: actions/checkout@v4
 
-      - name: Setting up the kernel compilation environment
+      - name: Install Tools
         run: |
-          echo "BUILD_TIME=$(date "+%Y%m%d-%H%M")" >> $GITHUB_ENV
           sudo apt update
           sudo apt install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler rename libelf-dev dwarves
           mkdir -p $GITHUB_WORKSPACE/kernel_workspace
 
-      - name: Set Swap to 10GB
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 10
-
-      - name: Download AOSP Clang
+      - name: Download Clang (Manual Link)
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
           mkdir clang
-          wget https://googlesource.com{{ env.AOSP_CLANG_SYSTEM }}/+archive/refs/heads/${{ env.AOSP_CLANG_BRANCH }}/clang-${{ env.AOSP_CLANG_VERSION }}.tar.gz
-          tar -C clang/ -zxvf clang-${{ env.AOSP_CLANG_VERSION }}.tar.gz
+          wget https://googlesource.com
+          tar -C clang/ -zxvf clang-r522817.tar.gz
 
-      - name: Download the kernel source code
+      - name: Download Kernel Source
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace
           git clone --depth=1 ${{ env.KERNEL_SOURCE }} -b ${{ env.KERNEL_SOURCE_BRANCH }} android-kernel
 
       - name: Setup KernelSU
-        if: env.ENABLE_KERNELSU == 'true'
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          curl -LSs "${{ env.KERNELSU_INSTALLER }}" | bash -s ${{ env.KERNELSU_TAG }}
+          curl -LSs "https://githubusercontent.com" | bash -s main
 
-      - name: Build kernel
+      - name: Build Kernel
         run: |
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
           export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang/bin:$PATH
-          make -j$(nproc --all) O=out ARCH=${{ env.ARCH }} ${{ env.KERNEL_CONFIG }}
-          make -j$(nproc --all) CC=clang O=out ARCH=${{ env.ARCH }} CROSS_COMPILE=aarch64-linux-gnu-
+          make -j$(nproc --all) O=out ARCH=arm64 ${{ env.KERNEL_CONFIG }}
+          make -j$(nproc --all) CC=clang O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1
 
-      - name: Upload Kernel Image
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel-${{ env.BUILD_TIME }}
+          name: Kernel-Image
           path: kernel_workspace/android-kernel/out/arch/arm64/boot/Image
